@@ -1,2 +1,2 @@
 # wnx
-小土堆的训练代码
+deep learning训练代码
