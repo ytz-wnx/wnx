@@ -1,0 +1,66 @@
+import torch
+import torchvision
+import torch.nn as nn
+import torch.optim
+from torch.utils.data import DataLoader, Dataset
+
+
+train_set = torchvision.datasets.MNIST(root="./data", train=True, download=True,
+                                       transform=torchvision.transforms.ToTensor())
+train_loader = DataLoader(dataset=train_set, batch_size=64, shuffle=True)
+
+text_set = torchvision.datasets.MNIST(root="./data", train=False, download=True,
+                                      transform=torchvision.transforms.ToTensor())
+text_loader = DataLoader(dataset=text_set, batch_size=64, shuffle=False)
+
+
+class LeNet(nn.Module):
+    def __init__(self):
+        super(LeNet, self).__init__()
+        self.module = nn.Sequential(
+            nn.Conv2d(1, 6, 5, 1, 2),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(6, 16, 5),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),
+            nn.Flatten(),
+            nn.Linear(16*5*5, 120),
+            nn.ReLU(),
+            nn.Linear(120, 84),
+            nn.ReLU(),
+            nn.Linear(84, 10),
+        )
+
+    def forward(self, x):
+        x = self.module(x)
+        return x
+
+
+my_net = LeNet()
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(my_net.parameters(), lr=0.01)
+epoch = 10
+total_train = 0
+for i in range(epoch):
+    print("-----第", i+1, "轮训练开始")
+    for datas in train_loader:
+        one_data, targets = datas
+        output = my_net(one_data)
+        loss = loss_fn(output, targets)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        total_train += 1
+        if total_train % 100 == 0:
+            print("训练次数：", total_train, "loss:", loss.item())
+
+
+total_loss = 0
+with torch.no_grad():
+    for datas in text_loader:
+        one_data, targets = datas
+        output = my_net(one_data)
+        loss = loss_fn(output, targets)
+        total_loss += loss.item()
+print("测试集上的总体误差为：", total_loss)
